@@ -8,6 +8,8 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+import { google } from 'worker-auth-providers';
+
 export interface Env {
 	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
 	// MY_KV_NAMESPACE: KVNamespace;
@@ -25,8 +27,65 @@ export interface Env {
 	// MY_QUEUE: Queue;
 }
 
+const CLIENT_ID = '';
+const CLIENT_SECRET = '';
+
+const getRedirectUrl = async () => {
+	const url = await google.redirect({
+		options: {
+			clientId: CLIENT_ID,
+			redirectTo: 'http://127.0.0.1:8787/auth/google.callback',
+			responseType: 'code',
+			scope: ['openid email profile'],
+			state: 'pass-through value',
+		},
+	});
+	return {
+		status: 302,
+		headers: {
+			location: url,
+		},
+	};
+};
+
+const getUser = async (request: Request) => {
+	const { user: providerUser, tokens } = await google.users({
+		options: {
+			clientSecret: CLIENT_SECRET,
+			clientId: CLIENT_ID,
+			redirectUrl: 'http://127.0.0.1:8787/auth/google.callback'
+		},
+		request,
+	});
+	console.log("[providerUser]", providerUser);
+	console.log("[tokens]", tokens);
+	return {
+		providerUser,
+		tokens,
+	}
+};
+
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		try {
+			const url: URL = new URL(request.url);
+			if (url.pathname.includes('/auth/google.callback') && url.searchParams.has('code')) {
+				const { providerUser } = await getUser(request);
+				if (providerUser) {
+					console.log('user:', providerUser.id, providerUser.email, providerUser.name);
+					return new Response(`Hello ${providerUser.name}!`);
+				}
+			}
+			else {
+				const redirect = await getRedirectUrl();
+				return Response.redirect(redirect.headers.location, redirect.status);
+			}
+		} catch (err) {
+			if (err instanceof Error) {
+				console.log("[error]", err?.stack);
+			}
+		}
 		return new Response('Hello World!');
 	},
 };
