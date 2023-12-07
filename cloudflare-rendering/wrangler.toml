@@ -2,11 +2,18 @@ name = "cloudflare-rendering"
 main = "src/index.ts"
 compatibility_date = "2023-03-14"
 compatibility_flags = [ "nodejs_compat" ]
+# rules = [
+#     { type = "ESModule", globs = ["**/*.ts"] }
+# ]
 
 browser = { binding = "MYBROWSER" }
 kv_namespaces = [
   { binding = "BROWSER_KV_DEMO", id = "d9399f05480c42fa99790e8b61b1e06c", preview_id = "fdad2b4db208470fa6ad483b9a6de806" }
 ]
+
+# [[build.upload.rules]]
+# type = "ESModule"
+# globs = ["**/*.ts"]
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.

@@ -1,11 +1,4 @@
-import puppeteer from "@cloudflare/puppeteer";
-import { rootRoute } from './routes/root';
-import { clientRoute } from './routes/client';
-import { homepageRoute } from './routes/data/homepage';
-// import { homepageScenario } from './scenarios/homepage';
-import type { Env } from './types';
-
-const homepageScenario = async (urlParam: string, env: Env, writer: WritableStreamDefaultWriter) => {
+export const homepageScenario = async (urlParam: string, env: Env, writer: WritableStreamDefaultWriter) => {
 	const textEncoder = new TextEncoder();
 	// let img: Buffer;
 	let elapsed: Number = 0;
@@ -42,7 +35,6 @@ const homepageScenario = async (urlParam: string, env: Env, writer: WritableStre
 	// 	expirationTtl: 60 * 60 * 24,
 	// });
 	await browser.close();
-	writer.close();
 	// }
 
 	// const result = {
@@ -65,45 +57,4 @@ const homepageScenario = async (urlParam: string, env: Env, writer: WritableStre
 	// 		"content-type": "image/jpeg",
 	// 	},
 	// });
-};
-
-
-// const homepageWork = async (urlParam: string, env: Env, writer: WritableStreamDefaultWriter) => {
-// 	await homepageScenario(urlParam, env, writer);
-// 	writer.close();
-// };
-
-export default {
-	async fetch(request: Request, env: Env): Promise<Response> {
-		const missingParamResponse = new Response(
-			"Please add an ?url=https://app.10ft.itv.com/3.181.1/browser/ parameter"
-		);
-		const url = new URL(request.url);
-		const { searchParams } = url;
-		let urlParam = searchParams.get("url");
-		switch(url.pathname) {
-			case '/data/homepage':
-				let { readable, writable } = new TransformStream();
-				let writer = writable.getWriter()
-				const textEncoder = new TextEncoder();
-				writer.write(textEncoder.encode('start\n'));
-				if (urlParam) {
-					homepageScenario(urlParam, env, writer);
-					return new Response(readable, {
-						headers: {
-							'Access-Control-Allow-Origin': '*'
-						}
-					});
-				} else {
-					return missingParamResponse;
-				}
-			case '/client':
-				if (!urlParam) {
-					return missingParamResponse;
-				}
-				return await clientRoute(request, env, urlParam);
-			default:
-				return await rootRoute(request, env);
-		}
-	}
 };
